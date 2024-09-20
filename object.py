@@ -1,73 +1,81 @@
 class Object:
-    def __init__(self, coords, text, interactions):
-        self._coords = coords
-        self._text = text
-        self._interactions = interactions
+    def __init__(self, label = None, coords = None, text = None, interactions = None):
+        self.coords = coords
+        self.text = text
+        self.interactions = interactions
+        self.label = label
 
     def get_coords(self):
-        return self._coords
+        return self.coords
 
     def get_text(self):
-        return self._text
+        return self.text
 
     def get_interactions(self):
-        return self._interactions
+        return self.interactions
+    
+    def get_label(self):
+        return self.label
 
     def set_coords(self, coords):
-        self._coords = coords
+        self.coords = coords
 
     def set_text(self, text):
-        self._text = text
+        self.text = text
 
     def set_interactions(self, interactions):
-        self._interactions = interactions
+        self.interactions = interactions
+
+    def set_label(self, label):
+        self.label = label
+
 
 
 class Text:
-    def __init__(self, content, coords, object):
-        self._content = content
-        self._coords = coords
-        self._object = object
+    def __init__(self, content = None, coords = None, object = None):
+        self.content = content
+        self.coords = coords
+        self.object = object
 
     def get_content(self):
-        return self._content
+        return self.content
 
     def get_coords(self):
-        return self._coords
+        return self.coords
 
     def get_object(self):
-        return self._object
+        return self.object
 
     def set_content(self, content):
-        self._content = content
+        self.content = content
 
     def set_coords(self, coords):
-        self._coords = coords
+        self.coords = coords
 
-    def set_object(self, object_):
-        self._object = object_
+    def set_object(self, object):
+        self.object = object
 
 
 class Interaction:
-    def __init__(self, coords, object, interaction_type):
-        self._coords = coords
-        self._object = object
-        self._interaction_type = interaction_type
+    def __init__(self, coords = None, object = None, interaction_type = None):
+        self.coords = coords
+        self.object = object
+        self.interaction_type = interaction_type
 
     def get_coords(self):
-        return self._coords
+        return self.coords
 
     def get_object(self):
-        return self._object
+        return self.object
 
     def get_interaction_type(self):
-        return self._interaction_type
+        return self._interactiontype
 
     def set_coords(self, coords):
-        self._coords = coords
+        self.coords = coords
 
-    def set_object(self, object_):
-        self._object = object_
+    def set_object(self, object):
+        self.object = object
 
     def set_interaction_type(self, interaction_type):
-        self._interaction_type = interaction_type
+        self.interaction_type = interaction_type
