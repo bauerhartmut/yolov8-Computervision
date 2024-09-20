@@ -107,7 +107,3 @@ Feel free to fork the repository, submit issues, and open pull requests for impr
 
 ## License 📄
 This project is licensed under the MIT License.
-
----
-
-Happy coding! ✨
