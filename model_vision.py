@@ -161,6 +161,7 @@ class Api:
                 
             return new_data
 
-
+vision = Vision("Computer_Vision_1.3.0.onnx")
+vision.start_vision()
     
 
