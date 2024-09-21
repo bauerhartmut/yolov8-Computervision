@@ -27,24 +27,22 @@ Welcome to the **Vision & Text Detection System**, a Python-based tool that leve
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/yourusername/vision-text-detection.git
-   cd vision-text-detection
+   git clone https://github.com/bauerhartmut/yolov8-Computervision.git
    ```
-
-2. **Install Required Packages**:
-   Install the necessary Python libraries using `pip`:
+   
+2. **Install libs**:
    ```bash
-   pip install -r requirements.txt
+   pip install ultralytics mss pytesseract
    ```
-
-3. **Install Tesseract OCR**:
+   
+4. **Install Tesseract OCR**:
    - Download and install [Tesseract OCR](https://github.com/tesseract-ocr/tesseract).
    - Make sure to set the Tesseract path in the code correctly. Example:
      ```python
      pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files/Tesseract-OCR/tesseract.exe'
      ```
 
-4. **Configure the YOLO Model**:
+5. **Configure the YOLO Model**:
    - Download a YOLO model (e.g., `Computer_Vision_1.3.0.onnx`) or train your own model and place it in the project directory.
 
 ## How It Works 🛠️
