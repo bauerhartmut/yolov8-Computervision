@@ -24,6 +24,8 @@ class Vision:
 
         labels = self.model.names
         labels = list(labels.values())
+
+        object_dict = {label: "" for label in labels}
     
         while True:
             
@@ -38,7 +40,19 @@ class Vision:
 
             data = {}
 
+            label_objects = {label: "" for label in labels}
+
             variables = {label: 0 for label in labels}
+
+            try: 
+                for label_object in label_objects:
+
+                    with open("label_discribtion.json", "r") as f:
+                        json_data = json.load(f)
+
+                    label_objects[label_object] = json_data[label_object]
+            except:
+                print(f"Die Labels in discribtion.json sind entweder falsch geschrieben oder stimmen nicht mit dem des Models überein. Das sind die gültigen Label: {labels}")
 
             for result in results:
                 for box in result.boxes:
@@ -46,20 +60,10 @@ class Vision:
                     label = self.model.names[int(box.cls)]  
                     coords = box.xyxy[0].tolist()
 
-                    if label != "text":
-
-                        text = object.Text(coords=self.get_text_from_boundingbox(original_image=screen, coords=coords, results=results))
-
-                        text.set_content(str(self.read_image(text.get_coords())).strip())
+                    if "object" in label_objects[label]:
 
                         obj = object.Object(label=label, coords=coords)
-
-                        text.set_object(obj)
-
-                        obj.set_text(text=text)
-
-                        data[f"{obj.get_label()}_{variables[label]}"] = [obj.get_coords(), obj.get_text().get_content()]
-                        variables[label] += 1
+                    
 
             
             with open("view_output.json", "w") as f:
@@ -93,6 +97,8 @@ class Vision:
         if (y2 + 10) < height:
             y2 += 10
 
+        coords = x1, y1, x2, y2 
+
         for coord_list in text_coords:
 
             textx1, texty1, textx2, texty2 = coord_list
@@ -105,6 +111,39 @@ class Vision:
                             return coord_list
         
         return 0
+    
+    def get_boxes_inside_boundingboxes(self, results, coords):
+
+        return_coords = []
+
+        boxes_coords = []
+
+        org_box = box.xyxy[0].tolist()
+
+        for result in results:
+            for box in result.boxes:
+
+                if coords == box.xyxy[0].tolist():
+                    pass
+                else:
+                    boxes_coords.append(box.xyxy[0].tolist())
+
+        for temp_coords in boxes_coords:
+            x1, y1, x2, y2 = temp_coords
+
+            middle_x = (x2-x1) + x1
+            middle_y = (y2-y1) + y1
+
+            if org_box[2] > middle_x > org_box[0]:
+                if org_box[1] > middle_y > org_box[3]:
+                    return_coords.append(temp_coords)
+
+        
+        return return_coords
+                            
+
+
+
 
     def read_image(self, coords=None, image=None):
 
