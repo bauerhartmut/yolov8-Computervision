@@ -43,7 +43,8 @@ Welcome to the **Vision & Text Detection System**, a Python-based tool that leve
      ```
 
 5. **Configure the YOLO Model**:
-   - Download a YOLO model (e.g., `Computer_Vision_1.3.0.onnx`) or train your own model and place it in the project directory.
+   - Download my YOLOv8 Model from Huggingface [Computer_Vision_1.5.3](https://huggingface.co/BauerHartmut/yolov8_Computer_Vision_1.5.3)
+   - get the label_description.json file from Huggingface [Label_description.json](https://huggingface.co/BauerHartmut/yolov8_Computer_Vision_1.5.3/blob/main/label_description.json)
 
 ## How It Works 🛠️
 
