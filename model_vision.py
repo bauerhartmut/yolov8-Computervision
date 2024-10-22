@@ -9,24 +9,24 @@ import multiprocessing
 import pytesseract
 import re
 import object
-import Containers
+from shapely.geometry import Polygon
 
 class Vision:
     
     def __init__(self, model):
         self.model = model = YOLO(model, task="detect")
+        print(self.model.names)
         
-    def start_vision(self):
+    def start_vision(self, num):
 
         logging.getLogger('ultralytics').setLevel(logging.WARNING)
 
         sct = mss()
-        monitor = sct.monitors[1]
+        monitors = sct.monitors
+        monitor = monitors[num]
 
         labels = self.model.names
         labels = list(labels.values())
-
-        object_dict = {label: "" for label in labels}
 
         label_objects = {label: "" for label in labels}
 
@@ -40,109 +40,162 @@ class Vision:
         except:
             print(f"Die Labels in discribtion.json sind entweder falsch geschrieben oder stimmen nicht mit dem des Models überein. Das sind die gültigen Label: {labels}")
 
+
     
         while True:
             
-            label_count = {label: 0 for label in labels}
-            label_dict = {label: [] for label in labels}
-            temp_dict = {label: 0 for label in labels}
             screen = np.array(sct.grab(monitor))
             screen = screen[:, :, :3]
             results = self.model(screen)
 
-            data = {}
-
-            variables = {label: 0 for label in labels}
-
-            container_map = self.create_container_map(results=results, label_objects=label_objects)
-
-            obj_list = []
+            data = {label: [] for label in self.model.names.values()}
 
             for result in results:
                 for box in result.boxes:
 
-                    label = self.model.names[int(box.cls)]  
-                    coords = box.xyxy[0].tolist()
+                    label = self.model.names[int(box.cls)]
 
-                    if "Container" in label_objects[label]: 
+                    data[label].append(box.xyxy.tolist()[0])
 
-                        if self.contains_key(container_map, "Toplayer", f"{label}_{temp_dict[label]}"):
-                            container = object.Container(layer="Toplayer", label=label)
-                        else:
-                            container = object.Container(layer="Bottomlayer", label=label)
+            obj_label = []
 
-                        temp_dict[label]+=1
-                            
-                        if "Object" in label_objects[label]:
+            for key in label_objects:
 
-                            obj = object.Object(label=label, coords=coords, container=container)
-                            container.set_object(object=obj)
-                            obj_list.append(obj)
+                if label_objects[key] == "Object":
 
-            all_boxes = []
+                    obj_label.append(key)
 
-            for result in results:
-                for box in result.boxes:
-                    box_dict = {}
-                    box_dict[self.model.names[int(box.cls)]] = box.xyxy[0].tolist()
-                    all_boxes.append(box_dict)
+            objects = []
 
-            print(all_boxes)
+            for label in obj_label:
+
+                for coords in data[label]:
+
+                    obj = object.Object(label=label, coords=coords)
+                    objects.append(obj)
+
+            property_labels = []
+
+            for key in label_objects:
+
+                if label_objects[key] == "Property":
+
+                    property_labels.append(key)
+
+            intersections = {}
+
+            for property in property_labels:
+
+                property_coords = data[property]
+
+                for coords in property_coords:
+
+                    for obj in objects:
+
+                        intersections[self.calculate_intersection(coords, obj.get_coords())] = [property, obj]
             
+            sorted_keys = sorted(intersections, reverse=True)
 
-            for obj in obj_list:
+            i = 0
 
-                if obj.get_container().get_layer() == "Toplayer":
-                    boxes = self.get_boxes_inside_boundingboxes(results=results, coords=obj.get_coords())
+            for key in sorted_keys:
 
+                intersections[key][1].set_property(intersections[key][0])
 
-                    for boxes_dict in boxes:
-                         for key, coords in boxes_dict.items():
+                if i == len(property_labels)-1:
 
-                            if "Text" in label_objects[key]:
-                                text = object.Text(content=self.read_image(screen, coords=coords), coords=coords, object=obj)
-                                obj.add_text(text)
+                    break  
 
+                i+=1
 
-                            if "Interaction" in label_objects[key]:
-                                interaction = object.Interaction(coords=coords, object=object, interaction_type=1)
-                                obj.add_interaction(interaction)
-
-                            coords_to_remove = coords 
             
-                            all_boxes = [box for box in all_boxes if not (key in box and box[key] == coords_to_remove)]
+            for obj in objects:
 
-                if obj.get_container().get_layer() == "Bottomlayer":
-                    boxes = self.get_boxes_inside_boundingboxes(results=results, coords=obj.get_coords())
+                if obj.get_property() == "toplayer":
 
-                    boxes_to_keep = []  # Liste für die zu behaltenden Boxen
+                    for key in data:
 
-                    for boxes_dict in boxes:
-                        for key, coords in boxes_dict.items():
-                            if any(key in box and box[key] == coords for box in all_boxes):
-                                boxes_to_keep.append(boxes_dict)
+                        if label_objects[key] == "Interaction":
 
-                    boxes = boxes_to_keep
+                            for coords in data[key]:
 
-                    for boxes_dict in boxes:
-                         for key, coords in boxes_dict.items():
+                                if self.is_box_inside_box(coords, obj.get_coords()):
 
-                            if "Text" in label_objects[key]:
-                                text = object.Text(content=self.read_image(screen, coords=coords), coords=coords, object=obj)
-                                obj.add_text(text)
+                                    interaction = object.Interaction(coords=coords, object=obj, interaction_type=1)
 
+                                    obj.add_interaction(interaction)
 
-                            if "Interaction" in label_objects[key]:
-                                interaction = object.Interaction(coords=coords, object=object, interaction_type=1)
-                                obj.add_interaction(interaction)
+                                    data[key].remove(coords)
 
-            for obj in obj_list:
-                data[f"{obj.get_label()}_{label_count[obj.get_label()]}"] = [obj.get_container().get_layer(), [obj.text_to_dict()], [obj.interactions_to_dict()]]
-                label_count[obj.get_label()]+=1
+                        if label_objects[key] == "Text":
+
+                            for coords in data[key]:
+
+                                if self.is_box_inside_box(coords, obj.get_coords()):
+
+                                    text = object.Text(coords=coords, object=obj)
+
+                                    obj.add_text(text)
+
+                                    data[key].remove(coords)
+
+            for obj in objects:
+
+                if obj.get_property() == "bottomlayer":
+
+                    for key in data:
+
+                        if label_objects[key] == "Interaction":
+
+                            for coords in data[key]:
+
+                                if self.is_box_inside_box(coords, obj.get_coords()):
+
+                                    interaction = object.Interaction(label=key, coords=coords, object=obj, interaction_type=1)
+
+                                    obj.add_interaction(interaction)
+
+                                    data[key].remove(coords)
+
+                        if label_objects[key] == "Text":
+
+                            for coords in data[key]:
+
+                                if self.is_box_inside_box(coords, obj.get_coords()):
+
+                                    text = object.Text(coords=coords, object=obj)
+
+                                    obj.add_text(text)
+
+                                    data[key].remove(coords)
+
+            
+            del json_data
+
+            json_data = []
+
+            i = 0
+
+            data_dict = {"Object": []}
+
+            for obj in objects:
+
+                temp_dict = {"index": f"{obj.get_label()}_{i}",
+                             "label": obj.get_label(),
+                             "property": obj.get_property(),
+                             "coords": obj.get_coords(),
+                             "textes": obj.num_of_text(),
+                             "interactions": obj.interactions_to_list()
+                            }
+                
+                data_dict["Object"].append(temp_dict)
+
+                i+=1
 
             with open("view_output.json", "w") as f:
-                   json.dump(data, f, indent=5)
-            time.sleep(0.1)
+
+                json.dump(data_dict, f, indent=4)
+    
 
     def contains_key(self, data, outer_key, search_key):
         if outer_key in data:
@@ -152,29 +205,6 @@ class Vision:
                 return True
         return False
     
-    def get_boxes_inside_boundingboxes(self, results, coords):
-
-        boxes = []
-
-        for result in results:
-            for box in result.boxes:
-
-                if coords == box.xyxy[0].tolist():
-                    continue
-                else:
-                    x1, y1, x2, y2 = box.xyxy[0]
-
-                    middle_x = (x2 + x1) / 2
-                    middle_y = (y2 + y1) / 2
-
-                    if coords[0] <= middle_x <= coords[2] and coords[1] <= middle_y <= coords[3]:
-                        label = self.model.names[int(box.cls)]
-                        if  label not in boxes:
-                            box_dict = {}
-                            box_dict[label] = box.xyxy[0].tolist()
-                            boxes.append(box_dict)
-        
-        return boxes
                             
     def read_image(self, image, coords):
 
@@ -209,31 +239,50 @@ class Vision:
         text = text.replace('\n', '')
 
         return text
+    
+    def calculate_intersection(self, box1, box2):
 
-    def create_container_map(self, results, label_objects):
+        try:
+            rect_1 = self.convert_xyxy_to_xyxyxyxy(coords=box1)
+            rect_2 = self.convert_xyxy_to_xyxyxyxy(coords=box2)
 
-        i = 0
-        con = Containers.Container()
+            rect_1 = Polygon(rect_1)
+            rect_2 = Polygon(rect_2)
 
-        for result in results:
-                for box in result.boxes:
+            poly_intersection = rect_1.intersection(rect_2)
 
-                    label = self.model.names[int(box.cls)]
+            return poly_intersection.area
+        
+        except:
 
-                    if "Container" in label_objects[label]:
+            return 0
 
-                        obj = object.Object(label=f"{label}_{i}", coords=box.xyxy[0].tolist())
-                        i+=1
+    def convert_xyxy_to_xyxyxyxy(self, coords):
+        """Korrigiere die Reihenfolge der Punkte, um ein valides Polygon zu erstellen"""
+        coords_1 = (coords[0], coords[1])  # (x1, y1)
+        coords_2 = (coords[2], coords[1])  # (x2, y1)
+        coords_3 = (coords[2], coords[3])  # (x2, y2)
+        coords_4 = (coords[0], coords[3])  # (x1, y2)
 
-                        con_dict = {obj.get_label(): con.convert_xyxy_to_xyxyxyxy(obj.get_coords())}
+        return_coords = [coords_1, coords_2, coords_3, coords_4]
 
-                        con.add_coords_dict(coords_dict=con_dict)
+        return return_coords
+    
+    def is_box_inside_box(self, box1, box2):
 
-        container_map = con.create_container_map()
+        x1, y1, x2, y2 = box1
 
-        return container_map
+        middle_x = (x2 + x1) / 2
+        middle_y = (y2 + y1) / 2
 
+        if middle_x > box2[0] and middle_x < box2[2]:
 
+            if middle_y > box2[1] and middle_y < box2[3]:
+
+                return True
+            
+        return False
+        
 
 class Api:
 
@@ -258,7 +307,7 @@ class Api:
                 
             return new_data
 
-vision = Vision("Computer_Vision_1.3.0.onnx")
-vision.start_vision()
+vision = Vision("Computer_Vision_1.5.3.onnx")
+vision.start_vision(2)
     
 

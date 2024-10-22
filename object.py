@@ -1,10 +1,11 @@
 class Object:
-    def __init__(self, label = None, coords = None, text = [], interactions = [], container = None):
+
+    def __init__(self, label = None, coords = None, text = [], interactions = [], property = None):
         self.coords = coords
         self.text = text
         self.interactions = interactions
         self.label = label
-        self.container = container
+        self.property = property
 
     def get_coords(self):
         return self.coords
@@ -18,8 +19,8 @@ class Object:
     def get_label(self):
         return self.label
     
-    def get_container(self):
-        return self.container
+    def get_property(self):
+        return self.property
 
     def set_coords(self, coords):
         self.coords = coords
@@ -33,8 +34,8 @@ class Object:
     def set_label(self, label):
         self.label = label
 
-    def set_container(self, container):
-        self.container = container
+    def set_property(self, property):
+        self.property = property
 
     def add_text(self, text):
         if not self.text:
@@ -61,23 +62,29 @@ class Object:
                 dict[t.get_content()] = t.get_coords()
 
         return dict
-    
-    def interactions_to_dict(self):
+        
+    def interactions_to_list(self):
 
         if self.interactions is None:
             self.interactions = []
 
-        dict = {}
+        return_list = []
 
-        for t in self.interactions:
+        for inter in self.interactions:
 
-            if t.get_interaction_type() in dict:
-                dict[t.get_interaction_type()].append(t.get_coords())
-            else:
-                
-                dict[t.get_interaction_type()] = t.get_coords()
+            dict = {
+                "label": inter.get_label(),
+                "interaction_type": inter.get_interaction_type(),
+                "coords": inter.get_coords()
+            }
 
-        return dict
+            return_list.append(dict)
+
+        return return_list
+    
+    def num_of_text(self):
+
+        return len(self.text)
 
 
 class Text:
@@ -106,11 +113,12 @@ class Text:
 
 
 class Interaction:
-    def __init__(self, coords = None, object = None, interaction_type = None, text = None):
+    def __init__(self, label = None, coords = None, object = None, interaction_type = None, text = None):
         self.coords = coords
         self.object = object
         self.interaction_type = interaction_type
         self.text = text
+        self.label = label
 
     def get_coords(self):
         return self.coords
@@ -123,6 +131,9 @@ class Interaction:
     
     def get_text(self):
         return self.text
+    
+    def get_label(self):
+        return self.label
 
     def set_coords(self, coords):
         self.coords = coords
@@ -136,27 +147,5 @@ class Interaction:
     def set_text(self, text):
         self.text = text
 
-class Container:
-
-    def __init__(self, layer = None, label = None, object = None):
-        self.layer = layer
-        self.label = label
-        self.object = object
-
-    def get_layer(self):
-        return self.layer
-    
-    def get_label(self):
-        return self.label
-    
-    def get_object(self):
-        return self.object
-    
-    def set_layer(self, layer):
-        self.layer = layer
-
     def set_label(self, label):
         self.label = label
-
-    def set_object(self, object):
-        self.object = object

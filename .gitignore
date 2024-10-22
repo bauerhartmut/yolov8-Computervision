@@ -1,9 +1,10 @@
-venv
-Computer_Vision_1.3.0.onnx
+__pycache__
+ignore
 model_view_output
-__pycache
+runs
+venv
+Computer_Vision_1.5.3.onnx
 label_discribtion.json
-debug.py 
-temp.txt
+test copy.py 
 test.py
-Unbenannt.PNG
+model_view_output.json
