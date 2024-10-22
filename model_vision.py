@@ -33,7 +33,7 @@ class Vision:
         try: 
             for label_object in label_objects:
 
-                with open("label_discribtion.json", "r") as f:
+                with open("label_description.json", "r") as f:
                     json_data = json.load(f)
 
                 label_objects[label_object] = json_data[label_object]
@@ -121,7 +121,7 @@ class Vision:
 
                                 if self.is_box_inside_box(coords, obj.get_coords()):
 
-                                    interaction = object.Interaction(coords=coords, object=obj, interaction_type=1)
+                                    interaction = object.Interaction(label=key, coords=coords, object=obj, interaction_type=1)
 
                                     obj.add_interaction(interaction)
 
@@ -169,7 +169,6 @@ class Vision:
 
                                     data[key].remove(coords)
 
-            
             del json_data
 
             json_data = []
